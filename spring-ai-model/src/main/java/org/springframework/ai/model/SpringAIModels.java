@@ -56,4 +56,6 @@ public final class SpringAIModels {
 
 	public static final String ZHIPUAI = "zhipuai";
 
+	public static final String COHERE = "cohere";
+
 }
