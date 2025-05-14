@@ -9,17 +9,21 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * Java Client library for Cohere Chat. Provides implementation for the
- * <a href="https://docs.cohere.com/reference/chat"> Chat and Chat with Streaming
+ * Java Client library for Cohere Platform. Provides implementation for the
+ * <a href="https://docs.cohere.com/reference/chat"> Chat and Chat with Streaming and the
+ * <a href="https://docs.cohere.com/reference/embed">Embedding API</a>.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
  * <b>Function Calling</b> features.
@@ -27,7 +31,7 @@ import java.util.function.Predicate;
  *
  * @author Ricken Bazolo
  */
-public class CohereChatApi {
+public class CohereApi {
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
@@ -45,7 +49,7 @@ public class CohereChatApi {
 	 * Create a new client api with DEFAULT_BASE_URL
 	 * @param cohereApiKey Cohere api Key.
 	 */
-	public CohereChatApi(String cohereApiKey) {
+	public CohereApi(String cohereApiKey) {
 		this(DEFAULT_BASE_URL, cohereApiKey);
 	}
 
@@ -54,7 +58,7 @@ public class CohereChatApi {
 	 * @param baseUrl api base URL.
 	 * @param cohereApiKey Cohere api Key.
 	 */
-	public CohereChatApi(String baseUrl, String cohereApiKey) {
+	public CohereApi(String baseUrl, String cohereApiKey) {
 		this(baseUrl, cohereApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
@@ -65,8 +69,8 @@ public class CohereChatApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public CohereChatApi(String baseUrl, String cohereApiKey, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	public CohereApi(String baseUrl, String cohereApiKey, RestClient.Builder restClientBuilder,
+					 ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(cohereApiKey);
@@ -318,10 +322,29 @@ public class CohereChatApi {
 	 * @param citations Tool call that this message is responding to. Only applicable for
 	 * the {@link ChatCompletionFinishReason#TOOL_CALL} role and null otherwise.
 	 */
-	public record ChatCompletionMessage(@JsonProperty("role") Role role,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls, @JsonProperty("tool_plan") String toolPlan,
+	public record ChatCompletionMessage(
 			@JsonProperty("content") Object content,
+			@JsonProperty("role") Role role,
+			@JsonProperty("name") String name,
+			@JsonProperty("tool_plan") String toolPlan,
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
 			@JsonProperty("citations") List<ChatCompletionCitation> citations) {
+
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null, null);
+		}
+
+		public ChatCompletionMessage(Object content, Role role, List<ToolCall> toolCalls) {
+			this(content, role, null, null, toolCalls, null);
+		}
+
+		public ChatCompletionMessage(Object content, Role role, String name) {
+			this(content, role, name, null, null, null);
+		}
+
+		public ChatCompletionMessage(Object content, Role role, String name, List<ToolCall> toolCalls, String toolPlan) {
+			this(content, role, name, toolPlan, toolCalls, null);
+		}
 
 		public record ChatCompletionCitation(
 				/**
@@ -357,7 +380,6 @@ public class CohereChatApi {
 			public record Source(@JsonProperty("type") String type, @JsonProperty("id") String id,
 					@JsonProperty("tool_output") Map<String, Object> toolOutput,
 					@JsonProperty("document") Map<String, Object> document) {
-
 			}
 		}
 
@@ -374,7 +396,6 @@ public class CohereChatApi {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
-
 		}
 
 		/**
@@ -387,10 +408,9 @@ public class CohereChatApi {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
-
 		}
 
-		public record MessageContent() {
+		public record MessageContent(@JsonProperty("type") String type, @JsonProperty("text") String text) {
 		}
 
 		/**
@@ -434,6 +454,34 @@ public class CohereChatApi {
 			}
 		}
 
+		/**
+		 * The role of the author of this message.
+		 */
+		public enum Role {
+
+			/**
+			 * User message.
+			 */
+			@JsonProperty("user")
+			USER,
+			/**
+			 * Assistant message.
+			 */
+			@JsonProperty("assistant")
+			ASSISTANT,
+			/**
+			 * System message.
+			 */
+			@JsonProperty("system")
+			SYSTEM,
+			/**
+			 * Tool message.
+			 */
+			@JsonProperty("tool")
+			TOOL
+
+		}
+
 	}
 
 	/**
@@ -473,34 +521,6 @@ public class CohereChatApi {
 	 * reply. Each document is a string-any dictionary.
 	 */
 	public record Document(@JsonProperty("id") String id, @JsonProperty("data") String data) {
-	}
-
-	/**
-	 * The role of the author of this message.
-	 */
-	public enum Role {
-
-		/**
-		 * User message.
-		 */
-		@JsonProperty("user")
-		USER,
-		/**
-		 * Assistant message.
-		 */
-		@JsonProperty("assistant")
-		ASSISTANT,
-		/**
-		 * System message.
-		 */
-		@JsonProperty("system")
-		SYSTEM,
-		/**
-		 * Tool message.
-		 */
-		@JsonProperty("tool")
-		TOOL
-
 	}
 
 	/**
@@ -733,5 +753,24 @@ public class CohereChatApi {
 		}
 
 	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post()
+				.uri("/v2/chat/")
+				.body(chatRequest)
+				.retrieve()
+				.toEntity(ChatCompletion.class);
+	}
+
 
 }
