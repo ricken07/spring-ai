@@ -3,17 +3,26 @@ package org.springframework.ai.cohere.chat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.cohere.api.CohereChatApi;
+
+import org.springframework.ai.cohere.api.CohereApi;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ResponseFormat;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.cohere.api.CohereApi.FunctionTool;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
-import static org.springframework.ai.cohere.api.CohereChatApi.ChatCompletionRequest.ResponseFormat;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Options for the Cohere Chat API.
+ * Options for the Cohere API.
  *
  * @author Ricken Bazolo
  */
@@ -64,20 +73,14 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	 * each step. When k is set to 0, k-sampling is disabled. Defaults to 0, min value of
 	 * 0, max value of 500.
 	 */
-	private @JsonProperty("k") Double k;
-
-	/**
-	 * Options for streaming response. Included in the API only if streaming-mode
-	 * completion is requested.
-	 */
-	private @JsonProperty("stream") Boolean stream;
+	private @JsonProperty("k") Integer k;
 
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
 	 */
-	private @JsonProperty("tools") List<CohereChatApi.FunctionTool> tools;
+	private @JsonProperty("tools") List<CohereApi.FunctionTool> tools;
 
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
@@ -90,7 +93,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	 * Used to select the safety instruction inserted into the prompt. Defaults to
 	 * CONTEXTUAL. When OFF is specified, the safety instruction will be omitted.
 	 */
-	private @JsonProperty("safety_mode") CohereChatApi.SafetyMode safetyMode;
+	private @JsonProperty("safety_mode") CohereApi.SafetyMode safetyMode;
 
 	/**
 	 * A list of up to 5 strings that the model will use to stop generation. If the model
@@ -120,12 +123,12 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	 * function via {"type: "function", "function": {"name": "my_function"}} forces the
 	 * model to call that function. none is the default when no functions are present.
 	 * auto is the default if functions are present. Use the
-	 * {@link org.springframework.ai.cohere.api.CohereChatApi.ToolChoiceBuilder} to create
+	 * {@link CohereApi.ToolChoiceBuilder} to create
 	 * a tool choice object.
 	 */
-	private @JsonProperty("tool_choice") Object toolChoice;
+	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 
-	private @JsonProperty("strict_tools") Boolean strict_tools;
+	private @JsonProperty("strict_tools") Boolean strictTools;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -150,12 +153,236 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	public CohereApi.SafetyMode getSafetyMode() {
+		return this.safetyMode;
+	}
+
+	public void setSafetyMode(CohereApi.SafetyMode safetyMode) {
+		this.safetyMode = safetyMode;
+	}
+
+	public Integer getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Integer seed) {
+		this.seed = seed;
+	}
+
+	public Boolean getLogprobs() {
+		return this.logprobs;
+	}
+
+	public void setLogprobs(Boolean logprobs) {
+		this.logprobs = logprobs;
+	}
+
+	public Boolean getStrictTools() {
+		return this.strictTools;
+	}
+
+	public void setStrictTools(Boolean strictTools) {
+		this.strictTools = strictTools;
+	}
+
+	public Double getP() {
+		return this.p;
+	}
+
+	public void setP(Double p) {
+		this.p = p;
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
+	}
+
+	public void setMaxTokens(Integer maxTokens) {
+		this.maxTokens = maxTokens;
+	}
+
+	public ResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	@Override
+	@JsonIgnore
+	public List<String> getStopSequences() {
+		return getStop();
+	}
+
+	@JsonIgnore
+	public void setStopSequences(List<String> stopSequences) {
+		setStop(stopSequences);
+	}
+
+	public List<String> getStop() {
+		return this.stopSequences;
+	}
+
+	public void setStop(List<String> stop) {
+		this.stopSequences = stop;
+	}
+
+	public List<FunctionTool> getTools() {
+		return this.tools;
+	}
+
+	public void setTools(List<FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(Double temperature) {
+		this.temperature = temperature;
+	}
+
+	@Override
+	public Double getTopP() {
+		return getP();
+	}
+
+	public void setTopP(Double topP) {
+		setP(topP);
+	}
+
+	@Override
+	public Double getFrequencyPenalty() {
+		return this.frequencyPenalty;
+	}
+
+	public void setFrequencyPenalty(Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	@Override
+	public Double getPresencePenalty() {
+		return this.presencePenalty;
+	}
+
+	public void setPresencePenalty(Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+	}
+
+	@Override
+	public CohereChatOptions copy() {
+		return fromOptions(this);
+	}
+
+	@Override
+	@JsonIgnore
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public Integer getTopK() {
+		return this.k;
+	}
+
+	public void setTopK(Integer k) {
+		this.k = k;
+	}
+
+	@Override
+	@JsonIgnore
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static CohereChatOptions fromOptions(CohereChatOptions fromOptions) {
-		return builder().build();
+		return CohereChatOptions.builder()
+			.model(fromOptions.getModel())
+			.temperature(fromOptions.getTemperature())
+			.maxTokens(fromOptions.getMaxTokens())
+			.topP(fromOptions.getTopP())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.topK(fromOptions.getTopK())
+			.tools(fromOptions.getTools())
+			.responseFormat(fromOptions.getResponseFormat())
+			.safetyMode(fromOptions.getSafetyMode())
+			.stop(fromOptions.getStopSequences())
+			.seed(fromOptions.getSeed())
+			.logprobs(fromOptions.getLogprobs())
+			.toolChoice(fromOptions.getToolChoice())
+			.strictTools(fromOptions.getStrictTools())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled()).build();
 	}
 
 	public static class Builder {
@@ -164,6 +391,124 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 
 		public CohereChatOptions build() {
 			return this.options;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(CohereApi.ChatModel chatModel) {
+			this.options.setModel(chatModel.getName());
+			return this;
+		}
+
+		public Builder safetyMode(CohereApi.SafetyMode safetyMode) {
+			this.options.setSafetyMode(safetyMode);
+			return this;
+		}
+
+		public Builder logprobs(Boolean logprobs) {
+			this.options.setLogprobs(logprobs);
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		public Builder seed(Integer seed) {
+			this.options.setSeed(seed);
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.options.setStop(stop);
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder topK(Integer k) {
+			this.options.setTopK(k);
+			return this;
+		}
+
+		public Builder responseFormat(ResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder tools(List<FunctionTool> tools) {
+			this.options.tools = tools;
+			return this;
+		}
+
+		public Builder strictTools(Boolean strictTools) {
+			this.options.setStrictTools(strictTools);
+			return this;
+		}
+
+		public Builder toolChoice(ToolChoice toolChoice) {
+			this.options.toolChoice = toolChoice;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
 		}
 
 	}

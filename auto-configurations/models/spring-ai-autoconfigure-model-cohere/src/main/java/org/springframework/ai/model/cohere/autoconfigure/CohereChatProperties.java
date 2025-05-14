@@ -1,6 +1,6 @@
 package org.springframework.ai.model.cohere.autoconfigure;
 
-import org.springframework.ai.cohere.api.CohereChatApi;
+import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.chat.CohereChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -15,7 +15,7 @@ public class CohereChatProperties extends CohereParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = CohereChatApi.ChatModel.COMMAND_R7B.getValue();
+	public static final String DEFAULT_CHAT_MODEL = CohereApi.ChatModel.COMMAND_R7B.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.3;
 
