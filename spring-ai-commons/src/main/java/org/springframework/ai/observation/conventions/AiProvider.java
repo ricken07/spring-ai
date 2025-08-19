@@ -99,6 +99,11 @@ public enum AiProvider {
 	GOOGLE_GENAI_AI("google_genai"),
 
 	/**
+	 * AI system provided by Cohere.
+	 */
+	COHERE("cohere"),
+
+	/**
 	 * AI system provided by ONNX.
 	 */
 	ONNX("onnx");
