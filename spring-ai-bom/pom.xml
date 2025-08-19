@@ -329,6 +329,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-cohere</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <!-- Spring AI Vector Stores -->
 
 			<dependency>
@@ -660,6 +666,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-deepseek</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-cohere</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1015,6 +1027,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-deepseek</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-cohere</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
